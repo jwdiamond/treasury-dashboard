@@ -1,21 +1,414 @@
-const D=window.DASHBOARD_DATA;
-const fmtPct=v=>`${Number(v).toFixed(2)}%`,fmtBp=v=>`${Math.round(v)} bp`,signBp=v=>`${v>=0?'+':''}${Math.round(v)} bp`,fmtT=v=>`$${Number(v).toFixed(2)}T`,fmtB=v=>`$${v>=0?'+':''}${Number(v).toFixed(1)}B`;
-document.getElementById('marketFresh').textContent=`Market data: ${D.meta.market_date||'n/a'}`;document.getElementById('mspdFresh').textContent=`Debt snapshot: ${D.meta.mspd_date||'n/a'}`;document.getElementById('curveFresh').textContent=`Yield curve: ${D.meta.curve_date||'n/a'}`;
-document.getElementById('ust10').textContent=fmtPct(D.market.ust10);document.getElementById('real10').textContent=fmtPct(D.market.real10);document.getElementById('ig').textContent=fmtBp(D.market.ig_oas);document.getElementById('bbb').textContent=fmtBp(D.market.bbb_oas);document.getElementById('hy').textContent=fmtBp(D.market.hy_oas);document.getElementById('ust10chg').textContent=`${signBp(D.market.ust10_5d_bp)} over 5 observations`;document.getElementById('bbbchg').textContent=`${signBp(D.market.bbb_5d_bp)} over 5 observations`;
-const H=(D.credit_history||[]).filter(d=>d.date);
-function rangeStats(key){const vals=H.slice(-365).map(d=>Number(d[key])).filter(Number.isFinite);if(!vals.length)return null;return{avg:vals.reduce((a,b)=>a+b,0)/vals.length,min:Math.min(...vals),max:Math.max(...vals)}}
-function putCtx(id,key,suffix,dec=0){const s=rangeStats(key);if(!s)return;document.getElementById(id).textContent=`1Y avg ${s.avg.toFixed(dec)}${suffix} · range ${s.min.toFixed(dec)}–${s.max.toFixed(dec)}${suffix}`}
-putCtx('ust10ctx','ust10','%',2);putCtx('real10ctx','real10','%',2);putCtx('igctx','ig',' bp');putCtx('bbbctx','bbb',' bp');putCtx('hyctx','hy',' bp');
-let status='Normal';if(D.market.alert_1d||D.market.alert_5d)status='Stress';else if(D.market.ust10_5d_bp>0&&D.market.bbb_5d_bp>0)status='Watch';document.getElementById('statusText').textContent=D.market.regime;const pill=document.getElementById('statusPill');pill.textContent=status;pill.className=`status-pill ${status.toLowerCase()}`;document.getElementById('statusExplain').textContent=status==='Stress'?"Treasury yields and BBB credit spreads have both risen enough to trigger the dashboard's tightening thresholds.":status==='Watch'?"Rates and credit spreads are moving in the same tightening direction, but not enough to trigger the stress thresholds.":'Rates and credit spreads are not currently showing a significant simultaneous tightening signal.';
-document.getElementById('debtTotal').textContent=fmtT(D.debt.marketable_debt_trillions);document.getElementById('wam').textContent=`${D.debt.wam_years.toFixed(2)} yrs`;document.getElementById('duration').textContent=`${D.debt.modified_duration_years.toFixed(2)} yrs`;document.getElementById('mspd').textContent=`MSPD snapshot: ${D.meta.mspd_date||'n/a'}`;
-document.getElementById('horizonCards').innerHTML=D.debt.maturity_buckets.map(d=>`<div class="horizon-card"><span>Maturing within ${d.horizon}</span><strong>${fmtT(d.amount)}</strong><small>${d.share.toFixed(1)}% of marketable debt</small></div>`).join('');
-const cfg={displaylogo:false,responsive:true,modeBarButtonsToRemove:['lasso2d','select2d']};const layout={margin:{l:58,r:18,t:20,b:50},paper_bgcolor:'#fff',plot_bgcolor:'#fff',font:{family:'Inter,system-ui,sans-serif',color:'#42515e',size:12},xaxis:{gridcolor:'#eef2f5',zeroline:false},yaxis:{gridcolor:'#eef2f5',zeroline:false},legend:{orientation:'h',y:-.22},hovermode:'x unified'};
-function filtered(days){if(days==='all'||!H.length)return H;const last=new Date(H.at(-1).date),cut=new Date(last);cut.setDate(cut.getDate()-Number(days));return H.filter(d=>new Date(d.date)>=cut)}
-function drawCredit(days=365){const x=filtered(days);if(x.length<2){document.getElementById('creditChart').innerHTML="<div class='empty'>Historical chart will populate after the exporter loads your real credit_market_history.csv.</div>";return}Plotly.newPlot('creditChart',[{x:x.map(d=>d.date),y:x.map(d=>d.ig),name:'IG OAS',mode:'lines'},{x:x.map(d=>d.date),y:x.map(d=>d.bbb),name:'BBB OAS',mode:'lines'},{x:x.map(d=>d.date),y:x.map(d=>d.hy),name:'High Yield OAS',mode:'lines'}],{...layout,yaxis:{...layout.yaxis,title:'Basis points'}},cfg)}
-function drawTightening(){if(H.length<2){document.getElementById('tighteningChart').innerHTML="<div class='empty'>Historical chart will populate after the exporter loads your real credit_market_history.csv.</div>";return}Plotly.newPlot('tighteningChart',[{x:H.map(d=>d.date),y:H.map(d=>d.ust10_5d_bp),name:'10Y Treasury',mode:'lines'},{x:H.map(d=>d.date),y:H.map(d=>d.bbb_5d_bp),name:'BBB OAS',mode:'lines'}],{...layout,yaxis:{...layout.yaxis,title:'Basis points'},shapes:[{type:'line',x0:0,x1:1,xref:'paper',y0:0,y1:0,line:{width:1,dash:'dot'}}]},cfg)}
-drawCredit();drawTightening();document.querySelectorAll('.range-buttons button').forEach(b=>b.addEventListener('click',()=>{b.parentElement.querySelectorAll('button').forEach(x=>x.classList.remove('active'));b.classList.add('active');drawCredit(b.dataset.range)}));
-const bucket2=(D.debt.maturity_buckets||[]).find(d=>String(d.horizon).startsWith('2 '));const bucket3=(D.debt.maturity_buckets||[]).find(d=>String(d.horizon).startsWith('3 '));if(bucket2){document.getElementById('refi2yrDebt').textContent=fmtT(bucket2.amount);document.getElementById('refi2yrShare').textContent=`${bucket2.share.toFixed(1)}% of marketable debt`;document.getElementById('refiLead').innerHTML=`About <strong>${fmtT(bucket2.amount)}</strong>, or <strong>${bucket2.share.toFixed(1)}%</strong> of marketable Treasury debt, matures within two years.`}if(bucket3){document.getElementById('refi3yrDebt').textContent=fmtT(bucket3.amount);document.getElementById('refi3yrShare').textContent=`${bucket3.share.toFixed(1)}% of marketable debt`}const wall=D.maturity_wall||[];let wallMode='amount';function drawWall(){if(!wall.length){document.getElementById('wallChart').innerHTML="<div class='empty'>The maturity wall will populate after you run the exporter against treasury_maturity_wall.csv.</div>";return}const ykey=Object.keys(wall[0]).find(k=>k.toLowerCase().includes('maturity'));const keys=Object.keys(wall[0]).filter(k=>k!==ykey);const cy=new Date().getFullYear();const x=wall.filter(r=>Number(r[ykey])>=cy&&Number(r[ykey])<=cy+20);const total=Number(D.debt.marketable_debt_trillions)||1;Plotly.react('wallChart',keys.map(k=>({x:x.map(r=>String(r[ykey])),y:x.map(r=>{const v=Number(r[k])||0;return wallMode==='share'?v/total*100:v}),name:k,type:'bar',hovertemplate:wallMode==='share'?`${k}<br>%{x}: %{y:.1f}% of marketable debt<extra></extra>`:`${k}<br>%{x}: $%{y:.2f}T<extra></extra>`})),{...layout,barmode:'stack',xaxis:{...layout.xaxis,type:'category',title:'Maturity year'},yaxis:{...layout.yaxis,title:wallMode==='share'?'Share of marketable debt (%)':'$ trillions'}},cfg)}drawWall();document.querySelectorAll('[data-wall-mode]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-wall-mode]').forEach(x=>x.classList.remove('active'));b.classList.add('active');wallMode=b.dataset.wallMode;drawWall()}));
-Plotly.newPlot('compositionChart',[{labels:D.debt.composition.map(d=>d.security),values:D.debt.composition.map(d=>d.amount),type:'pie',hole:.55,textinfo:'label+percent',hovertemplate:'%{label}: $%{value:.2f}T<extra></extra>'}],{...layout,margin:{l:45,r:45,t:20,b:65},showlegend:false},cfg);
-const R=D.refinancing;let rateShiftBp=0;let selectedYear=(R[1]||R[0]).year;function scenarioRow(r){const replacement=Number(r.replacement)+rateShiftBp/100;const resetBp=(replacement-Number(r.coupon))*100;const interestChange=Number(r.maturing)*(replacement-Number(r.coupon))*10;return{...r,replacement_scenario:replacement,reset_scenario_bp:resetBp,interest_scenario:interestChange}}function scenarioRows(){return R.map(scenarioRow)}function highlight(r){document.getElementById('highlightYear').textContent=r.year;document.getElementById('highlightTitle').textContent=`${fmtT(r.maturing)} of debt matures`;document.getElementById('highlightText').textContent=`Average existing coupon: ${r.coupon.toFixed(2)}%. Scenario replacement yield: ${r.replacement_scenario.toFixed(2)}%. That is a ${r.reset_scenario_bp>=0?'+':''}${Math.round(r.reset_scenario_bp)} bp rate reset and about ${fmtB(r.interest_scenario)} of annual interest cost in this scenario.`;document.querySelectorAll('#refiTable tr').forEach(tr=>tr.classList.toggle('selected',Number(tr.dataset.year)===r.year))}function drawRefi(){const S=scenarioRows();Plotly.react('refiDebtChart',[{x:S.map(d=>String(d.year)),y:S.map(d=>d.maturing),type:'bar',customdata:S.map(d=>[d.coupon,d.replacement_scenario,d.reset_scenario_bp]),hovertemplate:'%{x}<br>Debt: $%{y:.2f}T<br>Existing coupon: %{customdata[0]:.2f}%<br>Replacement yield: %{customdata[1]:.2f}%<br>Reset: %{customdata[2]:+.0f} bp<extra></extra>'}],{...layout,showlegend:false,xaxis:{...layout.xaxis,type:'category'},yaxis:{...layout.yaxis,title:'$ trillions'}},cfg);Plotly.react('interestChart',[{x:S.map(d=>String(d.year)),y:S.map(d=>d.interest_scenario),type:'bar',hovertemplate:'%{x}: $%{y:+.1f}B<extra></extra>'}],{...layout,showlegend:false,xaxis:{...layout.xaxis,type:'category'},yaxis:{...layout.yaxis,title:'$ billions / year'}},cfg);document.getElementById('interestScenarioSub').textContent=rateShiftBp===0?'Scenario using current replacement yields':`Replacement yields shifted ${rateShiftBp>0?'up':'down'} ${Math.abs(rateShiftBp)} bp`;document.getElementById('refiScenarioLabel').textContent=rateShiftBp===0?'At current replacement yields':`${rateShiftBp>0?'+':'−'}${Math.abs(rateShiftBp)} bp rate scenario`;const through2028=S.filter(r=>r.year<=2028).reduce((a,r)=>a+r.interest_scenario,0);document.getElementById('refiResetThrough2028').textContent=fmtB(through2028);document.getElementById('refiTable').innerHTML=S.map(r=>`<tr data-year="${r.year}"><td>${r.year}</td><td>${fmtT(r.maturing)}</td><td>${r.coupon.toFixed(2)}%</td><td>${r.replacement_scenario.toFixed(2)}%</td><td>${r.reset_scenario_bp>=0?'+':''}${Math.round(r.reset_scenario_bp)} bp</td><td>${fmtB(r.interest_scenario)}</td></tr>`).join('');document.querySelectorAll('#refiTable tr').forEach(tr=>tr.addEventListener('click',()=>{selectedYear=Number(tr.dataset.year);highlight(S.find(r=>r.year===selectedYear))}));highlight(S.find(r=>r.year===selectedYear)||S[0])}document.querySelectorAll('[data-rate-shift]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-rate-shift]').forEach(x=>x.classList.remove('active'));b.classList.add('active');rateShiftBp=Number(b.dataset.rateShift);drawRefi()}));drawRefi();
-document.querySelectorAll('.metric-card.clickable').forEach(c=>c.addEventListener('click',()=>document.getElementById(c.dataset.scroll).scrollIntoView({behavior:'smooth',block:'center'})));document.querySelectorAll('.method-btn').forEach(b=>b.addEventListener('click',()=>document.getElementById(b.dataset.dialog).showModal()));document.querySelectorAll('.close-dialog').forEach(b=>b.addEventListener('click',()=>b.closest('dialog').close()));
-function csv(name,rows){if(!rows.length)return;const keys=Object.keys(rows[0]),esc=v=>`"${String(v??'').replaceAll('"','""')}"`;const text=[keys.join(','),...rows.map(r=>keys.map(k=>esc(r[k])).join(','))].join('\n');const blob=new Blob([text],{type:'text/csv'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();URL.revokeObjectURL(a.href)}document.querySelectorAll('[data-download]').forEach(b=>b.addEventListener('click',()=>{const t=b.dataset.download;if(t==='credit')csv('credit_spreads.csv',H.map(d=>({date:d.date,ig_oas_bp:d.ig,bbb_oas_bp:d.bbb,hy_oas_bp:d.hy})));if(t==='tightening')csv('double_tightening.csv',H.map(d=>({date:d.date,ust10_5d_bp:d.ust10_5d_bp,bbb_5d_bp:d.bbb_5d_bp})));if(t==='wall')csv('treasury_maturity_wall.csv',wall);if(t==='refi')csv('treasury_refinancing.csv',R)}));
+const D = window.DASHBOARD_DATA;
+const fmtPct = v => `${Number(v).toFixed(2)}%`, fmtBp = v => `${Math.round(v)} bp`, signBp = v => `${v >= 0 ? '+' : ''}${Math.round(v)} bp`, fmtT = v => `$${Number(v).toFixed(2)}T`, fmtB = v => `$${v >= 0 ? '+' : ''}${Number(v).toFixed(1)}B`;
+document.getElementById('marketFresh').textContent = `Market data: ${D.meta.market_date || 'n/a'}`; document.getElementById('mspdFresh').textContent = `Debt snapshot: ${D.meta.mspd_date || 'n/a'}`; document.getElementById('curveFresh').textContent = `Yield curve: ${D.meta.curve_date || 'n/a'}`;
+document.getElementById('ust10').textContent = fmtPct(D.market.ust10); document.getElementById('real10').textContent = fmtPct(D.market.real10); document.getElementById('ig').textContent = fmtBp(D.market.ig_oas); document.getElementById('bbb').textContent = fmtBp(D.market.bbb_oas); document.getElementById('hy').textContent = fmtBp(D.market.hy_oas); document.getElementById('ust10chg').textContent = `${signBp(D.market.ust10_5d_bp)} over 5 observations`; document.getElementById('bbbchg').textContent = `${signBp(D.market.bbb_5d_bp)} over 5 observations`;
+const H = (D.credit_history || []).filter(d => d.date);
+function rangeStats(key) { const vals = H.slice(-365).map(d => Number(d[key])).filter(Number.isFinite); if (!vals.length) return null; return { avg: vals.reduce((a, b) => a + b, 0) / vals.length, min: Math.min(...vals), max: Math.max(...vals) } }
+function putCtx(id, key, suffix, dec = 0) { const s = rangeStats(key); if (!s) return; document.getElementById(id).textContent = `1Y avg ${s.avg.toFixed(dec)}${suffix} · range ${s.min.toFixed(dec)}–${s.max.toFixed(dec)}${suffix}` }
+putCtx('ust10ctx', 'ust10', '%', 2); putCtx('real10ctx', 'real10', '%', 2); putCtx('igctx', 'ig', ' bp'); putCtx('bbbctx', 'bbb', ' bp'); putCtx('hyctx', 'hy', ' bp');
+let status = 'Normal'; if (D.market.alert_1d || D.market.alert_5d) status = 'Stress'; else if (D.market.ust10_5d_bp > 0 && D.market.bbb_5d_bp > 0) status = 'Watch'; document.getElementById('statusText').textContent = D.market.regime; const pill = document.getElementById('statusPill'); pill.textContent = status; pill.className = `status-pill ${status.toLowerCase()}`; document.getElementById('statusExplain').textContent = status === 'Stress' ? "Treasury yields and BBB credit spreads have both risen enough to trigger the dashboard's tightening thresholds." : status === 'Watch' ? "Rates and credit spreads are moving in the same tightening direction, but not enough to trigger the stress thresholds." : 'Rates and credit spreads are not currently showing a significant simultaneous tightening signal.';
+document.getElementById('debtTotal').textContent = fmtT(D.debt.marketable_debt_trillions); document.getElementById('wam').textContent = `${D.debt.wam_years.toFixed(2)} yrs`; document.getElementById('duration').textContent = `${D.debt.modified_duration_years.toFixed(2)} yrs`; document.getElementById('mspd').textContent = `MSPD snapshot: ${D.meta.mspd_date || 'n/a'}`;
+document.getElementById('horizonCards').innerHTML = D.debt.maturity_buckets.map(d => `<div class="horizon-card"><span>Maturing within ${d.horizon}</span><strong>${fmtT(d.amount)}</strong><small>${d.share.toFixed(1)}% of marketable debt</small></div>`).join('');
+const cfg = { displaylogo: false, responsive: true, modeBarButtonsToRemove: ['lasso2d', 'select2d'] }; const layout = { margin: { l: 58, r: 18, t: 20, b: 50 }, paper_bgcolor: '#fff', plot_bgcolor: '#fff', font: { family: 'Inter,system-ui,sans-serif', color: '#42515e', size: 12 }, xaxis: { gridcolor: '#eef2f5', zeroline: false }, yaxis: { gridcolor: '#eef2f5', zeroline: false }, legend: { orientation: 'h', y: -.22 }, hovermode: 'x unified' };
+function filtered(days) { if (days === 'all' || !H.length) return H; const last = new Date(H.at(-1).date), cut = new Date(last); cut.setDate(cut.getDate() - Number(days)); return H.filter(d => new Date(d.date) >= cut) }
+function drawCredit(days = 365) { const x = filtered(days); if (x.length < 2) { document.getElementById('creditChart').innerHTML = "<div class='empty'>Historical chart will populate after the exporter loads your real credit_market_history.csv.</div>"; return } Plotly.newPlot('creditChart', [{ x: x.map(d => d.date), y: x.map(d => d.ig), name: 'IG OAS', mode: 'lines' }, { x: x.map(d => d.date), y: x.map(d => d.bbb), name: 'BBB OAS', mode: 'lines' }, { x: x.map(d => d.date), y: x.map(d => d.hy), name: 'High Yield OAS', mode: 'lines' }], { ...layout, yaxis: { ...layout.yaxis, title: 'Basis points' } }, cfg) }
+function drawTightening() { if (H.length < 2) { document.getElementById('tighteningChart').innerHTML = "<div class='empty'>Historical chart will populate after the exporter loads your real credit_market_history.csv.</div>"; return } Plotly.newPlot('tighteningChart', [{ x: H.map(d => d.date), y: H.map(d => d.ust10_5d_bp), name: '10Y Treasury', mode: 'lines' }, { x: H.map(d => d.date), y: H.map(d => d.bbb_5d_bp), name: 'BBB OAS', mode: 'lines' }], { ...layout, yaxis: { ...layout.yaxis, title: 'Basis points' }, shapes: [{ type: 'line', x0: 0, x1: 1, xref: 'paper', y0: 0, y1: 0, line: { width: 1, dash: 'dot' } }] }, cfg) }
+drawCredit(); drawTightening(); document.querySelectorAll('.range-buttons button').forEach(b => b.addEventListener('click', () => { b.parentElement.querySelectorAll('button').forEach(x => x.classList.remove('active')); b.classList.add('active'); drawCredit(b.dataset.range) }));
+const bucket2 = (D.debt.maturity_buckets || []).find(d => String(d.horizon).startsWith('2 ')); const bucket3 = (D.debt.maturity_buckets || []).find(d => String(d.horizon).startsWith('3 ')); if (bucket2) { document.getElementById('refi2yrDebt').textContent = fmtT(bucket2.amount); document.getElementById('refi2yrShare').textContent = `${bucket2.share.toFixed(1)}% of marketable debt`; document.getElementById('refiLead').innerHTML = `About <strong>${fmtT(bucket2.amount)}</strong>, or <strong>${bucket2.share.toFixed(1)}%</strong> of marketable Treasury debt, matures within two years.` } if (bucket3) { document.getElementById('refi3yrDebt').textContent = fmtT(bucket3.amount); document.getElementById('refi3yrShare').textContent = `${bucket3.share.toFixed(1)}% of marketable debt` } const wall = D.maturity_wall || []; let wallMode = 'amount'; function drawWall() { if (!wall.length) { document.getElementById('wallChart').innerHTML = "<div class='empty'>The maturity wall will populate after you run the exporter against treasury_maturity_wall.csv.</div>"; return } const ykey = Object.keys(wall[0]).find(k => k.toLowerCase().includes('maturity')); const keys = Object.keys(wall[0]).filter(k => k !== ykey); const cy = new Date().getFullYear(); const x = wall.filter(r => Number(r[ykey]) >= cy && Number(r[ykey]) <= cy + 20); const total = Number(D.debt.marketable_debt_trillions) || 1; Plotly.react('wallChart', keys.map(k => ({ x: x.map(r => String(r[ykey])), y: x.map(r => { const v = Number(r[k]) || 0; return wallMode === 'share' ? v / total * 100 : v }), name: k, type: 'bar', hovertemplate: wallMode === 'share' ? `${k}<br>%{x}: %{y:.1f}% of marketable debt<extra></extra>` : `${k}<br>%{x}: $%{y:.2f}T<extra></extra>` })), { ...layout, barmode: 'stack', xaxis: { ...layout.xaxis, type: 'category', title: 'Maturity year' }, yaxis: { ...layout.yaxis, title: wallMode === 'share' ? 'Share of marketable debt (%)' : '$ trillions' } }, cfg) } drawWall(); document.querySelectorAll('[data-wall-mode]').forEach(b => b.addEventListener('click', () => { document.querySelectorAll('[data-wall-mode]').forEach(x => x.classList.remove('active')); b.classList.add('active'); wallMode = b.dataset.wallMode; drawWall() }));
+Plotly.newPlot('compositionChart', [{ labels: D.debt.composition.map(d => d.security), values: D.debt.composition.map(d => d.amount), type: 'pie', hole: .55, textinfo: 'label+percent', hovertemplate: '%{label}: $%{value:.2f}T<extra></extra>' }], { ...layout, margin: { l: 45, r: 45, t: 20, b: 65 }, showlegend: false }, cfg);
+const R = D.refinancing;
+
+let rateShiftBp = 0;
+let selectedYear = (R[1] || R[0]).year;
+let refiRange = "near";
+
+function scenarioRow(r) {
+  const replacement = Number(r.replacement) + rateShiftBp / 100;
+  const resetBp = (replacement - Number(r.coupon)) * 100;
+
+  const interestChange =
+    Number(r.maturing) *
+    (replacement - Number(r.coupon)) *
+    10;
+
+  return {
+    ...r,
+    replacement_scenario: replacement,
+    reset_scenario_bp: resetBp,
+    interest_scenario: interestChange
+  };
+}
+
+function scenarioRows() {
+  return R.map(scenarioRow);
+}
+
+function visibleRateRows(S) {
+  if (refiRange === "all") {
+    return S;
+  }
+
+  return S.filter(
+    r => r.year >= 2026 && r.year <= 2036
+  );
+}
+
+function highlight(r) {
+  document.getElementById("highlightYear").textContent =
+    r.year;
+
+  document.getElementById("highlightTitle").textContent =
+    `${fmtT(r.maturing)} of debt matures`;
+
+  document.getElementById("highlightText").textContent =
+    `Average existing coupon: ${r.coupon.toFixed(2)}%. ` +
+    `Scenario replacement yield: ${r.replacement_scenario.toFixed(2)}%. ` +
+    `That is a ${r.reset_scenario_bp >= 0 ? "+" : ""}` +
+    `${Math.round(r.reset_scenario_bp)} bp rate reset and about ` +
+    `${fmtB(r.interest_scenario)} of annual interest cost in this scenario.`;
+
+  document.querySelectorAll("#refiTable tr").forEach(tr => {
+    tr.classList.toggle(
+      "selected",
+      Number(tr.dataset.year) === r.year
+    );
+  });
+}
+
+function selectRefiYear(year) {
+  selectedYear = Number(year);
+
+  const S = scenarioRows();
+
+  const row = S.find(
+    r => r.year === selectedYear
+  );
+
+  if (row) {
+    highlight(row);
+  }
+}
+
+function drawRefi() {
+  const S = scenarioRows();
+
+  const rateRows = visibleRateRows(S);
+
+  // LEFT CHART
+  Plotly.react(
+    "refiDebtChart",
+    [
+      {
+        x: rateRows.map(d => String(d.year)),
+        y: rateRows.map(d => d.coupon),
+
+        name: "Existing coupon",
+
+        type: "bar",
+
+        customdata: rateRows.map(d => [
+          d.year,
+          d.reset_scenario_bp
+        ]),
+
+        hovertemplate:
+          "%{x}<br>" +
+          "Existing coupon: %{y:.2f}%<br>" +
+          "Rate reset: %{customdata[1]:+.0f} bp" +
+          "<extra></extra>"
+      },
+
+      {
+        x: rateRows.map(d => String(d.year)),
+        y: rateRows.map(d => d.replacement_scenario),
+
+        name: "Replacement yield",
+
+        type: "bar",
+
+        customdata: rateRows.map(d => [
+          d.year,
+          d.reset_scenario_bp
+        ]),
+
+        hovertemplate:
+          "%{x}<br>" +
+          "Replacement yield: %{y:.2f}%<br>" +
+          "Rate reset: %{customdata[1]:+.0f} bp" +
+          "<extra></extra>"
+      }
+    ],
+
+    {
+      ...layout,
+
+      barmode: "group",
+
+      xaxis: {
+        ...layout.xaxis,
+        type: "category",
+        title: "Maturity year"
+      },
+
+      yaxis: {
+        ...layout.yaxis,
+        title: "Percent"
+      },
+
+      legend: {
+        orientation: "h",
+        y: -0.22
+      }
+    },
+
+    cfg
+  );
+
+  // RIGHT CHART
+  Plotly.react(
+    "interestChart",
+    [
+      {
+        x: S.map(d => String(d.year)),
+        y: S.map(d => d.interest_scenario),
+
+        type: "bar",
+
+        customdata: S.map(d => d.year),
+
+        hovertemplate:
+          "%{x}: $%{y:+.1f}B<extra></extra>"
+      }
+    ],
+
+    {
+  ...layout,
+
+  margin: {
+    ...layout.margin,
+    b: 105
+  },
+
+  showlegend: false,
+
+  xaxis: {
+    ...layout.xaxis,
+    type: "category",
+    title: "Maturity year"
+  },
+
+  yaxis: {
+    ...layout.yaxis,
+    title: "$ billions / year"
+  }
+    },
+
+    cfg
+  );
+
+  // CLICK LEFT CHART
+  const rateChart =
+    document.getElementById("refiDebtChart");
+
+  if (rateChart.removeAllListeners) {
+    rateChart.removeAllListeners("plotly_click");
+  }
+
+  rateChart.on("plotly_click", event => {
+    selectRefiYear(
+      Number(event.points[0].x)
+    );
+  });
+
+  // CLICK RIGHT CHART
+  const interestChart =
+    document.getElementById("interestChart");
+
+  if (interestChart.removeAllListeners) {
+    interestChart.removeAllListeners(
+      "plotly_click"
+    );
+  }
+
+  interestChart.on("plotly_click", event => {
+    selectRefiYear(
+      Number(event.points[0].x)
+    );
+  });
+
+  // SCENARIO TEXT
+  document.getElementById(
+    "interestScenarioSub"
+  ).textContent =
+    rateShiftBp === 0
+      ? "Scenario using current replacement yields"
+      : `Replacement yields shifted ${
+          rateShiftBp > 0 ? "up" : "down"
+        } ${Math.abs(rateShiftBp)} bp`;
+
+  document.getElementById(
+    "refiScenarioLabel"
+  ).textContent =
+    rateShiftBp === 0
+      ? "At current replacement yields"
+      : `${rateShiftBp > 0 ? "+" : "−"}${Math.abs(
+          rateShiftBp
+        )} bp rate scenario`;
+
+  // SUMMARY THROUGH 2028
+  const through2028 = S
+    .filter(r => r.year <= 2028)
+    .reduce(
+      (a, r) =>
+        a + r.interest_scenario,
+      0
+    );
+
+  document.getElementById(
+    "refiResetThrough2028"
+  ).textContent =
+    fmtB(through2028);
+
+  // TABLE
+  document.getElementById(
+    "refiTable"
+  ).innerHTML =
+    S.map(r => `
+      <tr data-year="${r.year}">
+        <td>${r.year}</td>
+
+        <td>
+          ${fmtT(r.maturing)}
+        </td>
+
+        <td>
+          ${r.coupon.toFixed(2)}%
+        </td>
+
+        <td>
+          ${r.replacement_scenario.toFixed(2)}%
+        </td>
+
+        <td>
+          ${
+            r.reset_scenario_bp >= 0
+              ? "+"
+              : ""
+          }${Math.round(
+            r.reset_scenario_bp
+          )} bp
+        </td>
+
+        <td>
+          ${fmtB(
+            r.interest_scenario
+          )}
+        </td>
+      </tr>
+    `).join("");
+
+  document
+    .querySelectorAll("#refiTable tr")
+    .forEach(tr => {
+
+      tr.addEventListener(
+        "click",
+        () => {
+          selectRefiYear(
+            Number(
+              tr.dataset.year
+            )
+          );
+        }
+      );
+
+    });
+
+  highlight(
+    S.find(
+      r =>
+        r.year === selectedYear
+    ) || S[0]
+  );
+}
+
+
+// INTEREST-RATE SCENARIO BUTTONS
+
+document
+  .querySelectorAll(
+    "[data-rate-shift]"
+  )
+  .forEach(b => {
+
+    b.addEventListener(
+      "click",
+      () => {
+
+        document
+          .querySelectorAll(
+            "[data-rate-shift]"
+          )
+          .forEach(x => {
+            x.classList.remove(
+              "active"
+            );
+          });
+
+        b.classList.add(
+          "active"
+        );
+
+        rateShiftBp =
+          Number(
+            b.dataset.rateShift
+          );
+
+        drawRefi();
+
+      }
+    );
+
+  });
+
+
+// REFINANCING CHART RANGE BUTTONS
+
+document
+  .querySelectorAll(
+    "[data-refi-range]"
+  )
+  .forEach(b => {
+
+    b.addEventListener(
+      "click",
+      () => {
+
+        document
+          .querySelectorAll(
+            "[data-refi-range]"
+          )
+          .forEach(x => {
+            x.classList.remove(
+              "active"
+            );
+          });
+
+        b.classList.add(
+          "active"
+        );
+
+        refiRange =
+          b.dataset.refiRange;
+
+        drawRefi();
+
+      }
+    );
+
+  });
+
+
+drawRefi();
+document.querySelectorAll('.metric-card.clickable').forEach(c => c.addEventListener('click', () => document.getElementById(c.dataset.scroll).scrollIntoView({ behavior: 'smooth', block: 'center' }))); document.querySelectorAll('.method-btn').forEach(b => b.addEventListener('click', () => document.getElementById(b.dataset.dialog).showModal())); document.querySelectorAll('.close-dialog').forEach(b => b.addEventListener('click', () => b.closest('dialog').close()));
+function csv(name, rows) { if (!rows.length) return; const keys = Object.keys(rows[0]), esc = v => `"${String(v ?? '').replaceAll('"', '""')}"`; const text = [keys.join(','), ...rows.map(r => keys.map(k => esc(r[k])).join(','))].join('\n'); const blob = new Blob([text], { type: 'text/csv' }), a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); URL.revokeObjectURL(a.href) } document.querySelectorAll('[data-download]').forEach(b => b.addEventListener('click', () => { const t = b.dataset.download; if (t === 'credit') csv('credit_spreads.csv', H.map(d => ({ date: d.date, ig_oas_bp: d.ig, bbb_oas_bp: d.bbb, hy_oas_bp: d.hy }))); if (t === 'tightening') csv('double_tightening.csv', H.map(d => ({ date: d.date, ust10_5d_bp: d.ust10_5d_bp, bbb_5d_bp: d.bbb_5d_bp }))); if (t === 'wall') csv('treasury_maturity_wall.csv', wall); if (t === 'refi') csv('treasury_refinancing.csv', R) }));

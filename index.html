@@ -147,27 +147,73 @@
         <article class="metric-card large"><span>Debt maturing within 2 years</span><strong id="refi2yrDebt"></strong><small id="refi2yrShare"></small></article>
         <article class="metric-card large"><span>Estimated annual interest reset through 2028</span><strong id="refiResetThrough2028"></strong><small id="refiScenarioLabel">At current replacement yields</small></article>
       </div>
-      <div class="grid two">
-        <article class="panel">
-          <div class="panel-top">
-            <div>
-              <div class="panel-title">Debt maturing by year</div>
-              <div class="panel-sub">Face amount scheduled to mature</div>
-            </div><button class="download-btn" data-download="refi">CSV</button>
-          </div>
-          <div id="refiDebtChart" class="chart"></div>
-        </article>
-        <article class="panel">
-          <div class="panel-top">
-            <div>
-              <div class="panel-title">Estimated annual interest-cost reset</div>
-              <div class="panel-sub" id="interestScenarioSub">Scenario using current replacement yields</div>
-            </div>
-            <div class="toggle-group" id="rateScenarioToggle"><button data-rate-shift="-100">−100 bp</button><button class="active" data-rate-shift="0">Current rates</button><button data-rate-shift="100">+100 bp</button></div>
-          </div>
-          <div id="interestChart" class="chart"></div>
-        </article>
+     <!-- Refinancing controls -->
+<div class="refi-controls-bar">
+
+  <div class="refi-control-group">
+    <span class="refi-control-label">Chart range</span>
+
+    <div class="refi-range-buttons">
+      <button class="active" data-refi-range="near">2026–2036</button>
+      <button data-refi-range="all">All years</button>
+    </div>
+  </div>
+
+  <div class="refi-control-group">
+    <span class="refi-control-label">Interest-rate scenario</span>
+
+    <div class="rate-scenario-buttons">
+      <button data-rate-shift="-100">−100 bp</button>
+      <button class="active" data-rate-shift="0">Current rates</button>
+      <button data-rate-shift="100">+100 bp</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="grid two refi-chart-grid">
+
+  <article class="panel">
+
+    <div class="panel-top">
+      <div>
+        <div class="panel-title">
+          Existing coupon vs. replacement yield
+        </div>
+
+        <div class="panel-sub">
+          Average rate on maturing debt compared with the refinancing scenario
+        </div>
       </div>
+
+      <button class="download-btn" data-download="refi">
+        CSV
+      </button>
+    </div>
+
+    <div id="refiDebtChart" class="chart"></div>
+
+  </article>
+
+  <article class="panel">
+
+    <div class="panel-top">
+      <div>
+        <div class="panel-title">
+          Estimated annual interest-cost reset
+        </div>
+
+        <div class="panel-sub" id="interestScenarioSub">
+          Scenario using current replacement yields
+        </div>
+      </div>
+    </div>
+
+    <div id="interestChart" class="chart"></div>
+
+  </article>
+
+</div>
       <article class="highlight-card">
         <div class="highlight-year" id="highlightYear"></div>
         <div>

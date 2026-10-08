@@ -9,3 +9,110 @@ dialog h4{color:var(--navy);margin-bottom:6px;margin-top:20px}
 .toggle-group button{border:1px solid var(--line);background:#fff;color:var(--navy);border-radius:6px;padding:7px 9px;font-size:.75rem;font-weight:800;cursor:pointer}
 .toggle-group button:hover,.toggle-group button.active{background:var(--navy);color:#fff;border-color:var(--navy)}
 @media(max-width:700px){.toggle-group{margin-top:10px}.section-lead{font-size:1.12rem}}
+/* =========================================================
+   REFINANCING CONTROLS
+   ========================================================= */
+
+.refi-controls-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 32px;
+
+  margin: 18px 0 20px;
+  padding: 16px 18px;
+
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.refi-control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.refi-control-label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.refi-range-buttons,
+.rate-scenario-buttons {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 7px;
+}
+
+.refi-range-buttons button,
+.rate-scenario-buttons button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  min-height: 38px;
+  padding: 8px 12px;
+
+  border: 1px solid var(--line);
+  border-radius: 6px;
+
+  background: #fff;
+  color: var(--navy);
+
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.refi-range-buttons button:hover,
+.rate-scenario-buttons button:hover,
+.refi-range-buttons button.active,
+.rate-scenario-buttons button.active {
+  background: var(--navy);
+  color: #fff;
+  border-color: var(--navy);
+}
+
+.refi-chart-grid .panel-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.refi-chart-grid .panel-top > div:first-child {
+  min-width: 0;
+}
+
+.refi-chart-grid .panel-title {
+  white-space: normal;
+}
+
+.refi-chart-grid .panel-sub {
+  max-width: 520px;
+}
+
+.refi-chart-grid .chart {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .refi-controls-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .refi-range-buttons,
+  .rate-scenario-buttons {
+    flex-wrap: wrap;
+  }
+}
