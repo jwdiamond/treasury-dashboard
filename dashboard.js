@@ -1,97 +1,23 @@
-
-const D = window.DASHBOARD_DATA;
-const fmtPct = v => `${Number(v).toFixed(2)}%`;
-const fmtBp = v => `${Math.round(v)} bp`;
-const signBp = v => `${v >= 0 ? "+" : ""}${Math.round(v)} bp`;
-const fmtT = v => `$${Number(v).toFixed(2)}T`;
-const fmtB = v => `$${v >= 0 ? "+" : ""}${Number(v).toFixed(1)}B`;
-
-document.getElementById("asof").textContent =
-  `Market data through ${D.meta.market_date} · Treasury debt snapshot ${D.meta.mspd_date}`;
-document.getElementById("ust10").textContent = fmtPct(D.market.ust10);
-document.getElementById("real10").textContent = fmtPct(D.market.real10);
-document.getElementById("ig").textContent = fmtBp(D.market.ig_oas);
-document.getElementById("bbb").textContent = fmtBp(D.market.bbb_oas);
-document.getElementById("hy").textContent = fmtBp(D.market.hy_oas);
-document.getElementById("ust10chg").textContent = `${signBp(D.market.ust10_5d_bp)} over 5 observations`;
-document.getElementById("bbbchg").textContent = `${signBp(D.market.bbb_5d_bp)} over 5 observations`;
-document.getElementById("regime").textContent = D.market.regime;
-document.getElementById("regimeExplain").textContent =
-  (D.market.ust10_5d_bp > 0 && D.market.bbb_5d_bp > 0)
-  ? "Treasury yields and BBB corporate spreads are rising together, increasing borrowing costs through both the risk-free rate and the credit-risk premium."
-  : "Rates and credit spreads are not currently moving in the same tightening direction.";
-
-document.getElementById("debtTotal").textContent = fmtT(D.debt.marketable_debt_trillions);
-document.getElementById("wam").textContent = `${D.debt.wam_years.toFixed(2)} yrs`;
-document.getElementById("duration").textContent = `${D.debt.modified_duration_years.toFixed(2)} yrs`;
-document.getElementById("mspd").textContent = `MSPD snapshot: ${D.meta.mspd_date}`;
-
-const plotCfg = {displayModeBar:false,responsive:true};
-const baseLayout = {
-  margin:{l:58,r:18,t:20,b:45},
-  paper_bgcolor:"#ffffff", plot_bgcolor:"#ffffff",
-  font:{family:"Inter, system-ui, sans-serif",color:"#42515e",size:12},
-  xaxis:{gridcolor:"#eef2f5",zeroline:false},
-  yaxis:{gridcolor:"#eef2f5",zeroline:false},
-  legend:{orientation:"h",y:-0.22},
-  hovermode:"x unified"
-};
-
-const H = D.credit_history || [];
-if (H.length > 1) {
-  Plotly.newPlot("creditChart",[
-    {x:H.map(d=>d.date),y:H.map(d=>d.ig),name:"IG OAS",mode:"lines",line:{width:2}},
-    {x:H.map(d=>d.date),y:H.map(d=>d.bbb),name:"BBB OAS",mode:"lines",line:{width:2}},
-    {x:H.map(d=>d.date),y:H.map(d=>d.hy),name:"High Yield OAS",mode:"lines",line:{width:2}}
-  ],{...baseLayout,yaxis:{...baseLayout.yaxis,title:"Basis points"}},plotCfg);
-  Plotly.newPlot("tighteningChart",[
-    {x:H.map(d=>d.date),y:H.map(d=>d.ust10_5d_bp),name:"10Y Treasury, 5-day change",mode:"lines",line:{width:2}},
-    {x:H.map(d=>d.date),y:H.map(d=>d.bbb_5d_bp),name:"BBB OAS, 5-day change",mode:"lines",line:{width:2}}
-  ],{...baseLayout,yaxis:{...baseLayout.yaxis,title:"Basis points"},shapes:[{type:"line",x0:0,x1:1,xref:"paper",y0:0,y1:0,line:{width:1,dash:"dot"}}]},plotCfg);
-} else {
-  document.getElementById("creditChart").innerHTML = "<div class='empty'>Historical chart will populate after you run the exporter against credit_market_history.csv.</div>";
-  document.getElementById("tighteningChart").innerHTML = "<div class='empty'>Historical chart will populate after you run the exporter against credit_market_history.csv.</div>";
-}
-
-Plotly.newPlot("bucketChart",[{
-  x:D.debt.maturity_buckets.map(d=>d.horizon),
-  y:D.debt.maturity_buckets.map(d=>d.amount),
-  type:"bar",
-  hovertemplate:"%{x}: $%{y:.2f}T<extra></extra>"
-}],{
-  ...baseLayout,
-  showlegend:false,
-  xaxis:{
-    ...baseLayout.xaxis,
-    type:"category",
-    title:"Maturity horizon"
-  },
-  yaxis:{
-    ...baseLayout.yaxis,
-    title:"$ trillions"
-  }
-},plotCfg);
-
-Plotly.newPlot("compositionChart",[{
-  labels:D.debt.composition.map(d=>d.security),
-  values:D.debt.composition.map(d=>d.amount),
-  type:"pie",hole:.52,textinfo:"label+percent",hovertemplate:"%{label}: $%{value:.2f}T<extra></extra>"
-}],{...baseLayout,margin:{l:35,r:35,t:25,b:55},showlegend:false},plotCfg);
-
-const R = D.refinancing;
-Plotly.newPlot("refiDebtChart",[{
-  x:R.map(d=>String(d.year)),y:R.map(d=>d.maturing),type:"bar",
-  hovertemplate:"%{x}: $%{y:.2f}T<extra></extra>"
-}],{...baseLayout,showlegend:false,yaxis:{...baseLayout.yaxis,title:"$ trillions"}},plotCfg);
-
-Plotly.newPlot("interestChart",[{
-  x:R.map(d=>String(d.year)),y:R.map(d=>d.interest_change),type:"bar",
-  hovertemplate:"%{x}: $%{y:.1f}B<extra></extra>"
-}],{...baseLayout,showlegend:false,yaxis:{...baseLayout.yaxis,title:"$ billions / year"}},plotCfg);
-
-document.getElementById("refiTable").innerHTML = R.map(r => `
-<tr>
-  <td>${r.year}</td><td>${fmtT(r.maturing)}</td><td>${r.coupon.toFixed(2)}%</td>
-  <td>${r.replacement.toFixed(2)}%</td><td>+${Math.round(r.reset_bp)} bp</td>
-  <td>${fmtB(r.interest_change)}</td>
-</tr>`).join("");
+const D=window.DASHBOARD_DATA;
+const fmtPct=v=>`${Number(v).toFixed(2)}%`,fmtBp=v=>`${Math.round(v)} bp`,signBp=v=>`${v>=0?'+':''}${Math.round(v)} bp`,fmtT=v=>`$${Number(v).toFixed(2)}T`,fmtB=v=>`$${v>=0?'+':''}${Number(v).toFixed(1)}B`;
+document.getElementById('marketFresh').textContent=`Market data: ${D.meta.market_date||'n/a'}`;document.getElementById('mspdFresh').textContent=`Debt snapshot: ${D.meta.mspd_date||'n/a'}`;document.getElementById('curveFresh').textContent=`Yield curve: ${D.meta.curve_date||'n/a'}`;
+document.getElementById('ust10').textContent=fmtPct(D.market.ust10);document.getElementById('real10').textContent=fmtPct(D.market.real10);document.getElementById('ig').textContent=fmtBp(D.market.ig_oas);document.getElementById('bbb').textContent=fmtBp(D.market.bbb_oas);document.getElementById('hy').textContent=fmtBp(D.market.hy_oas);document.getElementById('ust10chg').textContent=`${signBp(D.market.ust10_5d_bp)} over 5 observations`;document.getElementById('bbbchg').textContent=`${signBp(D.market.bbb_5d_bp)} over 5 observations`;
+const H=(D.credit_history||[]).filter(d=>d.date);
+function rangeStats(key){const vals=H.slice(-365).map(d=>Number(d[key])).filter(Number.isFinite);if(!vals.length)return null;return{avg:vals.reduce((a,b)=>a+b,0)/vals.length,min:Math.min(...vals),max:Math.max(...vals)}}
+function putCtx(id,key,suffix,dec=0){const s=rangeStats(key);if(!s)return;document.getElementById(id).textContent=`1Y avg ${s.avg.toFixed(dec)}${suffix} · range ${s.min.toFixed(dec)}–${s.max.toFixed(dec)}${suffix}`}
+putCtx('ust10ctx','ust10','%',2);putCtx('real10ctx','real10','%',2);putCtx('igctx','ig',' bp');putCtx('bbbctx','bbb',' bp');putCtx('hyctx','hy',' bp');
+let status='Normal';if(D.market.alert_1d||D.market.alert_5d)status='Stress';else if(D.market.ust10_5d_bp>0&&D.market.bbb_5d_bp>0)status='Watch';document.getElementById('statusText').textContent=D.market.regime;const pill=document.getElementById('statusPill');pill.textContent=status;pill.className=`status-pill ${status.toLowerCase()}`;document.getElementById('statusExplain').textContent=status==='Stress'?"Treasury yields and BBB credit spreads have both risen enough to trigger the dashboard's tightening thresholds.":status==='Watch'?"Rates and credit spreads are moving in the same tightening direction, but not enough to trigger the stress thresholds.":'Rates and credit spreads are not currently showing a significant simultaneous tightening signal.';
+document.getElementById('debtTotal').textContent=fmtT(D.debt.marketable_debt_trillions);document.getElementById('wam').textContent=`${D.debt.wam_years.toFixed(2)} yrs`;document.getElementById('duration').textContent=`${D.debt.modified_duration_years.toFixed(2)} yrs`;document.getElementById('mspd').textContent=`MSPD snapshot: ${D.meta.mspd_date||'n/a'}`;
+document.getElementById('horizonCards').innerHTML=D.debt.maturity_buckets.map(d=>`<div class="horizon-card"><span>Maturing within ${d.horizon}</span><strong>${fmtT(d.amount)}</strong><small>${d.share.toFixed(1)}% of marketable debt</small></div>`).join('');
+const cfg={displaylogo:false,responsive:true,modeBarButtonsToRemove:['lasso2d','select2d']};const layout={margin:{l:58,r:18,t:20,b:50},paper_bgcolor:'#fff',plot_bgcolor:'#fff',font:{family:'Inter,system-ui,sans-serif',color:'#42515e',size:12},xaxis:{gridcolor:'#eef2f5',zeroline:false},yaxis:{gridcolor:'#eef2f5',zeroline:false},legend:{orientation:'h',y:-.22},hovermode:'x unified'};
+function filtered(days){if(days==='all'||!H.length)return H;const last=new Date(H.at(-1).date),cut=new Date(last);cut.setDate(cut.getDate()-Number(days));return H.filter(d=>new Date(d.date)>=cut)}
+function drawCredit(days=365){const x=filtered(days);if(x.length<2){document.getElementById('creditChart').innerHTML="<div class='empty'>Historical chart will populate after the exporter loads your real credit_market_history.csv.</div>";return}Plotly.newPlot('creditChart',[{x:x.map(d=>d.date),y:x.map(d=>d.ig),name:'IG OAS',mode:'lines'},{x:x.map(d=>d.date),y:x.map(d=>d.bbb),name:'BBB OAS',mode:'lines'},{x:x.map(d=>d.date),y:x.map(d=>d.hy),name:'High Yield OAS',mode:'lines'}],{...layout,yaxis:{...layout.yaxis,title:'Basis points'}},cfg)}
+function drawTightening(){if(H.length<2){document.getElementById('tighteningChart').innerHTML="<div class='empty'>Historical chart will populate after the exporter loads your real credit_market_history.csv.</div>";return}Plotly.newPlot('tighteningChart',[{x:H.map(d=>d.date),y:H.map(d=>d.ust10_5d_bp),name:'10Y Treasury',mode:'lines'},{x:H.map(d=>d.date),y:H.map(d=>d.bbb_5d_bp),name:'BBB OAS',mode:'lines'}],{...layout,yaxis:{...layout.yaxis,title:'Basis points'},shapes:[{type:'line',x0:0,x1:1,xref:'paper',y0:0,y1:0,line:{width:1,dash:'dot'}}]},cfg)}
+drawCredit();drawTightening();document.querySelectorAll('.range-buttons button').forEach(b=>b.addEventListener('click',()=>{b.parentElement.querySelectorAll('button').forEach(x=>x.classList.remove('active'));b.classList.add('active');drawCredit(b.dataset.range)}));
+const wall=D.maturity_wall||[];if(wall.length){const ykey=Object.keys(wall[0]).find(k=>k.toLowerCase().includes('maturity'));const keys=Object.keys(wall[0]).filter(k=>k!==ykey);const cy=new Date().getFullYear();const x=wall.filter(r=>Number(r[ykey])>=cy&&Number(r[ykey])<=cy+20);Plotly.newPlot('wallChart',keys.map(k=>({x:x.map(r=>String(r[ykey])),y:x.map(r=>Number(r[k])||0),name:k,type:'bar',hovertemplate:`${k}<br>%{x}: $%{y:.2f}T<extra></extra>`})),{...layout,barmode:'stack',xaxis:{...layout.xaxis,type:'category',title:'Maturity year'},yaxis:{...layout.yaxis,title:'$ trillions'}},cfg)}else document.getElementById('wallChart').innerHTML="<div class='empty'>The maturity wall will populate after you run the exporter against treasury_maturity_wall.csv.</div>";
+Plotly.newPlot('compositionChart',[{labels:D.debt.composition.map(d=>d.security),values:D.debt.composition.map(d=>d.amount),type:'pie',hole:.55,textinfo:'label+percent',hovertemplate:'%{label}: $%{value:.2f}T<extra></extra>'}],{...layout,margin:{l:45,r:45,t:20,b:65},showlegend:false},cfg);
+const R=D.refinancing;Plotly.newPlot('refiDebtChart',[{x:R.map(d=>String(d.year)),y:R.map(d=>d.maturing),type:'bar',customdata:R.map(d=>[d.coupon,d.replacement,d.reset_bp]),hovertemplate:'%{x}<br>Debt: $%{y:.2f}T<br>Existing coupon: %{customdata[0]:.2f}%<br>Replacement yield: %{customdata[1]:.2f}%<br>Reset: +%{customdata[2]:.0f} bp<extra></extra>'}],{...layout,showlegend:false,xaxis:{...layout.xaxis,type:'category'},yaxis:{...layout.yaxis,title:'$ trillions'}},cfg);Plotly.newPlot('interestChart',[{x:R.map(d=>String(d.year)),y:R.map(d=>d.interest_change),type:'bar',hovertemplate:'%{x}: $%{y:.1f}B<extra></extra>'}],{...layout,showlegend:false,xaxis:{...layout.xaxis,type:'category'},yaxis:{...layout.yaxis,title:'$ billions / year'}},cfg);
+function highlight(r){document.getElementById('highlightYear').textContent=r.year;document.getElementById('highlightTitle').textContent=`${fmtT(r.maturing)} of debt matures`;document.getElementById('highlightText').textContent=`Average existing coupon: ${r.coupon.toFixed(2)}%. Estimated replacement yield: ${r.replacement.toFixed(2)}%. That is a ${Math.round(r.reset_bp)} bp rate reset and about ${fmtB(r.interest_change)} of annual interest cost in this scenario.`;document.querySelectorAll('#refiTable tr').forEach(tr=>tr.classList.toggle('selected',tr.dataset.year==r.year))}
+document.getElementById('refiTable').innerHTML=R.map(r=>`<tr data-year="${r.year}"><td>${r.year}</td><td>${fmtT(r.maturing)}</td><td>${r.coupon.toFixed(2)}%</td><td>${r.replacement.toFixed(2)}%</td><td>+${Math.round(r.reset_bp)} bp</td><td>${fmtB(r.interest_change)}</td></tr>`).join('');document.querySelectorAll('#refiTable tr').forEach(tr=>tr.addEventListener('click',()=>highlight(R.find(r=>String(r.year)===tr.dataset.year))));highlight(R[1]||R[0]);
+document.querySelectorAll('.metric-card.clickable').forEach(c=>c.addEventListener('click',()=>document.getElementById(c.dataset.scroll).scrollIntoView({behavior:'smooth',block:'center'})));document.querySelectorAll('.method-btn').forEach(b=>b.addEventListener('click',()=>document.getElementById(b.dataset.dialog).showModal()));document.querySelectorAll('.close-dialog').forEach(b=>b.addEventListener('click',()=>b.closest('dialog').close()));
+function csv(name,rows){if(!rows.length)return;const keys=Object.keys(rows[0]),esc=v=>`"${String(v??'').replaceAll('"','""')}"`;const text=[keys.join(','),...rows.map(r=>keys.map(k=>esc(r[k])).join(','))].join('\n');const blob=new Blob([text],{type:'text/csv'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();URL.revokeObjectURL(a.href)}document.querySelectorAll('[data-download]').forEach(b=>b.addEventListener('click',()=>{const t=b.dataset.download;if(t==='credit')csv('credit_spreads.csv',H.map(d=>({date:d.date,ig_oas_bp:d.ig,bbb_oas_bp:d.bbb,hy_oas_bp:d.hy})));if(t==='tightening')csv('double_tightening.csv',H.map(d=>({date:d.date,ust10_5d_bp:d.ust10_5d_bp,bbb_5d_bp:d.bbb_5d_bp})));if(t==='wall')csv('treasury_maturity_wall.csv',wall);if(t==='refi')csv('treasury_refinancing.csv',R)}));

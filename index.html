@@ -14,135 +14,44 @@
     <div class="eyebrow">Center for Tax and Budget Policy</div>
     <h1>U.S. Treasury & Credit Market Dashboard</h1>
     <p class="dek">Tracking federal debt structure, refinancing pressure, Treasury yields, and corporate credit conditions.</p>
-    <div class="asof" id="asof"></div>
+    <div class="freshness-row"><span id="marketFresh"></span><span id="mspdFresh"></span><span id="curveFresh"></span></div>
   </div>
 </header>
-
+<nav class="section-nav"><div class="wrap nav-inner"><a href="#market">Market conditions</a><a href="#debt">Debt structure</a><a href="#refi">Refinancing pressure</a><a href="#methodology">Methodology</a></div></nav>
 <main class="wrap">
-  <section>
-    <div class="section-head">
-      <div>
-        <div class="kicker">Market conditions</div>
-        <h2>Rates and credit</h2>
-      </div>
-      <p class="section-note">Daily market indicators. Credit spreads are option-adjusted spreads (OAS).</p>
-    </div>
-
-    <div class="cards five">
-      <article class="metric-card"><span>10-Year Treasury</span><strong id="ust10"></strong><small id="ust10chg"></small></article>
-      <article class="metric-card"><span>10-Year Real Yield</span><strong id="real10"></strong><small>Inflation-protected Treasury yield</small></article>
-      <article class="metric-card"><span>Investment Grade OAS</span><strong id="ig"></strong><small>Broad corporate credit</small></article>
-      <article class="metric-card"><span>BBB OAS</span><strong id="bbb"></strong><small id="bbbchg"></small></article>
-      <article class="metric-card"><span>High Yield OAS</span><strong id="hy"></strong><small>Riskier corporate credit</small></article>
-    </div>
-
-    <div class="callout" id="regimeBox">
-      <div>
-        <span class="callout-label">5-day regime</span>
-        <strong id="regime"></strong>
-      </div>
-      <p id="regimeExplain"></p>
-    </div>
-
-    <div class="grid two">
-      <article class="panel">
-        <div class="panel-title">Corporate credit spreads</div>
-        <div id="creditChart" class="chart"></div>
-      </article>
-      <article class="panel">
-        <div class="panel-title">Double-tightening monitor</div>
-        <div id="tighteningChart" class="chart"></div>
-        <p class="caption">Positive values on both lines mean Treasury yields and BBB credit spreads are rising together.</p>
-      </article>
-    </div>
-  </section>
-
-  <section>
-    <div class="section-head">
-      <div>
-        <div class="kicker">Debt structure</div>
-        <h2>The Treasury maturity wall</h2>
-      </div>
-      <p class="section-note">Monthly Treasury debt data.</p>
-    </div>
-
-    <div class="cards three">
-      <article class="metric-card large"><span>Marketable Treasury debt</span><strong id="debtTotal"></strong><small id="mspd"></small></article>
-      <article class="metric-card large"><span>Weighted-average maturity</span><strong id="wam"></strong><small>Face-value weighted</small></article>
-      <article class="metric-card large"><span>Estimated modified duration</span><strong id="duration"></strong><small>Nominal Bills, Notes and Bonds</small></article>
-    </div>
-
-    <div class="grid two">
-      <article class="panel">
-        <div class="panel-title">Debt maturing within selected horizons</div>
-        <div id="bucketChart" class="chart"></div>
-      </article>
-      <article class="panel">
-        <div class="panel-title">Marketable debt composition</div>
-        <div id="compositionChart" class="chart"></div>
-      </article>
-    </div>
-  </section>
-
-  <section>
-    <div class="section-head">
-      <div>
-        <div class="kicker">Refinancing pressure</div>
-        <h2>What happens as existing debt matures?</h2>
-      </div>
-      <p class="section-note">Estimated using current Treasury yields as replacement rates.</p>
-    </div>
-
-    <div class="grid two">
-      <article class="panel">
-        <div class="panel-title">Debt maturing by year</div>
-        <div id="refiDebtChart" class="chart"></div>
-      </article>
-      <article class="panel">
-        <div class="panel-title">Estimated annual interest-cost reset</div>
-        <div id="interestChart" class="chart"></div>
-      </article>
-    </div>
-
-    <article class="panel table-panel">
-      <div class="panel-title">Refinancing detail</div>
-      <div class="table-scroll">
-        <table>
-          <thead><tr><th>Year</th><th>Debt maturing</th><th>Existing coupon</th><th>Replacement yield</th><th>Rate reset</th><th>Annual interest change</th></tr></thead>
-          <tbody id="refiTable"></tbody>
-        </table>
-      </div>
-    </article>
-  </section>
-
-  <section class="methodology">
-    <div class="section-head">
-      <div>
-        <div class="kicker">Methodology</div>
-        <h2>How to read the dashboard</h2>
-      </div>
-    </div>
-    <div class="grid two">
-      <article class="text-card">
-        <h3>Credit spreads</h3>
-        <p>Option-adjusted spread (OAS) measures the additional yield investors demand to hold corporate credit relative to the Treasury curve, after adjusting for embedded options. Wider spreads generally indicate tighter credit conditions.</p>
-      </article>
-      <article class="text-card">
-        <h3>Refinancing estimates</h3>
-        <p>The refinancing analysis compares the coupon on maturing Treasury securities with an estimated replacement yield from the current Treasury curve. It is a scenario estimate, not an official Treasury forecast.</p>
-      </article>
-    </div>
-    <div class="sources">
-      <strong>Primary sources:</strong> U.S. Treasury Fiscal Data; U.S. Treasury daily yield curves; Federal Reserve Bank of St. Louis (FRED); ICE BofA corporate option-adjusted spread series via FRED.
-    </div>
-  </section>
+<section id="market">
+  <div class="section-head"><div><div class="kicker">Market conditions</div><h2>Rates and credit</h2></div><button class="method-btn" data-dialog="marketMethod">How to read this</button></div>
+  <div class="status-strip"><div><span class="status-label">Current status</span><strong id="statusText"></strong></div><span class="status-pill" id="statusPill"></span><p id="statusExplain"></p></div>
+  <div class="cards five">
+    <article class="metric-card clickable" data-scroll="creditPanel"><span>10-Year Treasury</span><strong id="ust10"></strong><small id="ust10chg"></small><div class="context" id="ust10ctx"></div></article>
+    <article class="metric-card clickable" data-scroll="creditPanel"><span>10-Year Real Yield</span><strong id="real10"></strong><small>Inflation-protected Treasury yield</small><div class="context" id="real10ctx"></div></article>
+    <article class="metric-card clickable" data-scroll="creditPanel"><span>Investment Grade OAS</span><strong id="ig"></strong><small>Broad corporate credit</small><div class="context" id="igctx"></div></article>
+    <article class="metric-card clickable" data-scroll="creditPanel"><span>BBB OAS</span><strong id="bbb"></strong><small id="bbbchg"></small><div class="context" id="bbbctx"></div></article>
+    <article class="metric-card clickable" data-scroll="creditPanel"><span>High Yield OAS</span><strong id="hy"></strong><small>Riskier corporate credit</small><div class="context" id="hyctx"></div></article>
+  </div>
+  <div class="grid two">
+    <article class="panel" id="creditPanel"><div class="panel-top"><div><div class="panel-title">Corporate credit spreads</div><div class="panel-sub">ICE BofA option-adjusted spreads</div></div><div class="panel-actions"><div class="range-buttons"><button data-range="30">1M</button><button data-range="90">3M</button><button data-range="365" class="active">1Y</button><button data-range="all">All</button></div><button class="download-btn" data-download="credit">CSV</button></div></div><div id="creditChart" class="chart"></div></article>
+    <article class="panel"><div class="panel-top"><div><div class="panel-title">Double-tightening monitor</div><div class="panel-sub">5-observation changes</div></div><button class="download-btn" data-download="tightening">CSV</button></div><div id="tighteningChart" class="chart"></div><p class="caption">Positive values on both lines mean Treasury yields and BBB credit spreads are rising together.</p></article>
+  </div>
+</section>
+<section id="debt">
+  <div class="section-head"><div><div class="kicker">Debt structure</div><h2>The Treasury maturity wall</h2></div><button class="method-btn" data-dialog="debtMethod">Methodology</button></div>
+  <div class="cards three"><article class="metric-card large"><span>Marketable Treasury debt</span><strong id="debtTotal"></strong><small id="mspd"></small></article><article class="metric-card large"><span>Weighted-average maturity</span><strong id="wam"></strong><small>Face-value weighted</small></article><article class="metric-card large"><span>Estimated modified duration</span><strong id="duration"></strong><small>Nominal Bills, Notes and Bonds</small></article></div>
+  <article class="panel feature-panel"><div class="panel-top"><div><div class="panel-title">Marketable Treasury debt by maturity year</div><div class="panel-sub">Stacked by security class</div></div><button class="download-btn" data-download="wall">CSV</button></div><div id="wallChart" class="chart tall"></div></article>
+  <div class="horizon-grid" id="horizonCards"></div>
+  <article class="panel"><div class="panel-top"><div><div class="panel-title">Marketable debt composition</div><div class="panel-sub">Share of outstanding marketable debt</div></div></div><div id="compositionChart" class="chart"></div></article>
+</section>
+<section id="refi">
+  <div class="section-head"><div><div class="kicker">Refinancing pressure</div><h2>What happens as existing debt matures?</h2></div><button class="method-btn" data-dialog="refiMethod">Methodology</button></div>
+  <div class="grid two"><article class="panel"><div class="panel-top"><div><div class="panel-title">Debt maturing by year</div><div class="panel-sub">Face amount scheduled to mature</div></div><button class="download-btn" data-download="refi">CSV</button></div><div id="refiDebtChart" class="chart"></div></article><article class="panel"><div class="panel-top"><div><div class="panel-title">Estimated annual interest-cost reset</div><div class="panel-sub">Scenario using current replacement yields</div></div></div><div id="interestChart" class="chart"></div></article></div>
+  <article class="highlight-card"><div class="highlight-year" id="highlightYear"></div><div><div class="highlight-title" id="highlightTitle"></div><p id="highlightText"></p></div></article>
+  <article class="panel table-panel"><div class="panel-title">Refinancing detail</div><div class="table-scroll"><table><thead><tr><th>Year</th><th>Debt maturing</th><th>Existing coupon</th><th>Replacement yield</th><th>Rate reset</th><th>Annual interest change</th></tr></thead><tbody id="refiTable"></tbody></table></div></article>
+</section>
+<section id="methodology"><div class="section-head"><div><div class="kicker">Sources and notes</div><h2>Data methodology</h2></div></div><div class="sources-card"><p><strong>Primary sources:</strong> U.S. Treasury Fiscal Data; U.S. Treasury daily yield curves; Federal Reserve Bank of St. Louis (FRED); ICE BofA corporate option-adjusted spread series via FRED.</p><p>Market indicators update daily when source observations are available. Treasury debt structure updates monthly with the Monthly Statement of the Public Debt.</p><p>The refinancing-cost analysis is a scenario estimate based on current Treasury yields and should not be interpreted as an official Treasury forecast.</p></div></section>
 </main>
-
-<footer>
-  <div class="wrap">Center for Tax and Budget Policy · Rice University</div>
-</footer>
-
-<script src="data/dashboard_data.js"></script>
-<script src="dashboard.js"></script>
-</body>
-</html>
+<footer><div class="wrap">Center for Tax and Budget Policy · Rice University</div></footer>
+<dialog id="marketMethod"><button class="close-dialog">×</button><h3>Rates and credit</h3><p>The 10-year Treasury and 10-year real yield capture nominal and inflation-adjusted long-term interest rates. Corporate OAS measures the additional yield investors demand over the Treasury curve after adjusting for embedded options.</p><p>When Treasury yields and credit spreads rise together, financing conditions tighten through both the risk-free rate and the credit-risk premium.</p></dialog>
+<dialog id="debtMethod"><button class="close-dialog">×</button><h3>Debt structure</h3><p>The maturity wall uses Treasury security-level data from the Monthly Statement of the Public Debt and groups outstanding principal by maturity year and security class.</p><p>Weighted-average maturity is face-value weighted. The duration measure is an estimate for nominal Bills, Notes and Bonds; TIPS and FRNs are excluded from the aggregate duration estimate.</p></dialog>
+<dialog id="refiMethod"><button class="close-dialog">×</button><h3>Refinancing pressure</h3><p>The analysis compares the coupon on maturing Treasury securities with an estimated replacement yield from the current Treasury curve. The resulting interest-cost change is illustrative and depends on future issuance decisions, maturity choices, and market rates.</p></dialog>
+<script src="data/dashboard_data.js"></script><script src="dashboard.js"></script>
+</body></html>
