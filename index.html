@@ -119,7 +119,7 @@
           <div>
             <div class="panel-title">Marketable Treasury debt by maturity year</div>
             <div class="panel-sub">Stacked by security class</div>
-          </div><button class="download-btn" data-download="wall">CSV</button>
+          </div><div class="panel-actions"><div class="toggle-group" id="wallModeToggle"><button class="active" data-wall-mode="amount">Face amount</button><button data-wall-mode="share">Share of debt</button></div><button class="download-btn" data-download="wall">CSV</button></div>
         </div>
         <div id="wallChart" class="chart tall"></div>
       </article>
@@ -139,7 +139,13 @@
         <div>
           <div class="kicker">Refinancing pressure</div>
           <h2>What happens as existing debt matures?</h2>
-        </div><button class="method-btn" data-dialog="refiMethod">Methodology</button>
+        </div><button class="method-btn" data-dialog="refiMethod">How is refinancing cost estimated?</button>
+      </div>
+      <p class="section-lead" id="refiLead"></p>
+      <div class="cards three refi-summary">
+        <article class="metric-card large"><span>Debt maturing within 3 years</span><strong id="refi3yrDebt"></strong><small id="refi3yrShare"></small></article>
+        <article class="metric-card large"><span>Debt maturing within 2 years</span><strong id="refi2yrDebt"></strong><small id="refi2yrShare"></small></article>
+        <article class="metric-card large"><span>Estimated annual interest reset through 2028</span><strong id="refiResetThrough2028"></strong><small id="refiScenarioLabel">At current replacement yields</small></article>
       </div>
       <div class="grid two">
         <article class="panel">
@@ -155,8 +161,9 @@
           <div class="panel-top">
             <div>
               <div class="panel-title">Estimated annual interest-cost reset</div>
-              <div class="panel-sub">Scenario using current replacement yields</div>
+              <div class="panel-sub" id="interestScenarioSub">Scenario using current replacement yields</div>
             </div>
+            <div class="toggle-group" id="rateScenarioToggle"><button data-rate-shift="-100">−100 bp</button><button class="active" data-rate-shift="0">Current rates</button><button data-rate-shift="100">+100 bp</button></div>
           </div>
           <div id="interestChart" class="chart"></div>
         </article>
@@ -276,10 +283,11 @@
       and Bonds; TIPS and FRNs are excluded from the aggregate duration estimate.</p>
   </dialog>
   <dialog id="refiMethod"><button class="close-dialog">×</button>
-    <h3>Refinancing pressure</h3>
-    <p>The analysis compares the coupon on maturing Treasury securities with an estimated replacement yield from the
-      current Treasury curve. The resulting interest-cost change is illustrative and depends on future issuance
-      decisions, maturity choices, and market rates.</p>
+    <h3>How is refinancing cost estimated?</h3>
+    <p>The dashboard compares the average coupon on Treasury securities maturing in each year with an estimated replacement yield from the current Treasury curve.</p>
+    <div class="formula-box">Estimated annual interest reset = debt maturing × (replacement yield − existing coupon)</div>
+    <p>The <strong>Current rates</strong> scenario uses the latest Treasury curve. The <strong>+100 bp</strong> and <strong>−100 bp</strong> scenarios shift replacement yields up or down by one percentage point to illustrate sensitivity to future rates.</p>
+    <p>This is a scenario analysis, not an official Treasury forecast. Actual interest costs will depend on future rates, issuance choices, maturity composition, buybacks, and the mix of bills, notes, bonds, TIPS, and FRNs.</p>
   </dialog>
   <script src="data/dashboard_data.js"></script>
   <script src="dashboard.js"></script>
