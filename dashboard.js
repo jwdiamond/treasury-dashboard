@@ -7,12 +7,99 @@ function rangeStats(key) { const vals = H.slice(-365).map(d => Number(d[key])).f
 function putCtx(id, key, suffix, dec = 0) { const s = rangeStats(key); if (!s) return; document.getElementById(id).textContent = `1Y avg ${s.avg.toFixed(dec)}${suffix} · range ${s.min.toFixed(dec)}–${s.max.toFixed(dec)}${suffix}` }
 putCtx('ust10ctx', 'ust10', '%', 2); putCtx('real10ctx', 'real10', '%', 2); putCtx('igctx', 'ig', ' bp'); putCtx('bbbctx', 'bbb', ' bp'); putCtx('hyctx', 'hy', ' bp');
 let status = 'Normal'; if (D.market.alert_1d || D.market.alert_5d) status = 'Stress'; else if (D.market.ust10_5d_bp > 0 && D.market.bbb_5d_bp > 0) status = 'Watch'; document.getElementById('statusText').textContent = D.market.regime; const pill = document.getElementById('statusPill'); pill.textContent = status; pill.className = `status-pill ${status.toLowerCase()}`; document.getElementById('statusExplain').textContent = status === 'Stress' ? "Treasury yields and BBB credit spreads have both risen enough to trigger the dashboard's tightening thresholds." : status === 'Watch' ? "Rates and credit spreads are moving in the same tightening direction, but not enough to trigger the stress thresholds." : 'Rates and credit spreads are not currently showing a significant simultaneous tightening signal.';
+document.getElementById("statusTreasuryMove").textContent =
+  signBp(D.market.ust10_5d_bp);
+
+document.getElementById("statusBBBMove").textContent =
+  signBp(D.market.bbb_5d_bp);
 document.getElementById('debtTotal').textContent = fmtT(D.debt.marketable_debt_trillions); document.getElementById('wam').textContent = `${D.debt.wam_years.toFixed(2)} yrs`; document.getElementById('duration').textContent = `${D.debt.modified_duration_years.toFixed(2)} yrs`; document.getElementById('mspd').textContent = `MSPD snapshot: ${D.meta.mspd_date || 'n/a'}`;
 document.getElementById('horizonCards').innerHTML = D.debt.maturity_buckets.map(d => `<div class="horizon-card"><span>Maturing within ${d.horizon}</span><strong>${fmtT(d.amount)}</strong><small>${d.share.toFixed(1)}% of marketable debt</small></div>`).join('');
 const cfg = { displaylogo: false, responsive: true, modeBarButtonsToRemove: ['lasso2d', 'select2d'] }; const layout = { margin: { l: 58, r: 18, t: 20, b: 50 }, paper_bgcolor: '#fff', plot_bgcolor: '#fff', font: { family: 'Inter,system-ui,sans-serif', color: '#42515e', size: 12 }, xaxis: { gridcolor: '#eef2f5', zeroline: false }, yaxis: { gridcolor: '#eef2f5', zeroline: false }, legend: { orientation: 'h', y: -.22 }, hovermode: 'x unified' };
 function filtered(days) { if (days === 'all' || !H.length) return H; const last = new Date(H.at(-1).date), cut = new Date(last); cut.setDate(cut.getDate() - Number(days)); return H.filter(d => new Date(d.date) >= cut) }
 function drawCredit(days = 365) { const x = filtered(days); if (x.length < 2) { document.getElementById('creditChart').innerHTML = "<div class='empty'>Historical chart will populate after the exporter loads your real credit_market_history.csv.</div>"; return } Plotly.newPlot('creditChart', [{ x: x.map(d => d.date), y: x.map(d => d.ig), name: 'IG OAS', mode: 'lines' }, { x: x.map(d => d.date), y: x.map(d => d.bbb), name: 'BBB OAS', mode: 'lines' }, { x: x.map(d => d.date), y: x.map(d => d.hy), name: 'High Yield OAS', mode: 'lines' }], { ...layout, yaxis: { ...layout.yaxis, title: 'Basis points' } }, cfg) }
-function drawTightening() { if (H.length < 2) { document.getElementById('tighteningChart').innerHTML = "<div class='empty'>Historical chart will populate after the exporter loads your real credit_market_history.csv.</div>"; return } Plotly.newPlot('tighteningChart', [{ x: H.map(d => d.date), y: H.map(d => d.ust10_5d_bp), name: '10Y Treasury', mode: 'lines' }, { x: H.map(d => d.date), y: H.map(d => d.bbb_5d_bp), name: 'BBB OAS', mode: 'lines' }], { ...layout, yaxis: { ...layout.yaxis, title: 'Basis points' }, shapes: [{ type: 'line', x0: 0, x1: 1, xref: 'paper', y0: 0, y1: 0, line: { width: 1, dash: 'dot' } }] }, cfg) }
+function drawTightening() {
+  if (H.length < 2) {
+    document.getElementById("tighteningChart").innerHTML =
+      "<div class='empty'>Historical chart will populate after the exporter loads your real credit_market_history.csv.</div>";
+    return;
+  }
+
+  Plotly.newPlot(
+    "tighteningChart",
+    [
+      {
+        x: H.map(d => d.date),
+        y: H.map(d => d.ust10_5d_bp),
+        name: "10Y Treasury",
+        mode: "lines"
+      },
+      {
+        x: H.map(d => d.date),
+        y: H.map(d => d.bbb_5d_bp),
+        name: "BBB OAS",
+        mode: "lines"
+      }
+    ],
+    {
+      ...layout,
+
+      yaxis: {
+        ...layout.yaxis,
+        title: "5-observation change (bp)"
+      },
+
+      shapes: [
+        {
+          type: "line",
+          x0: 0,
+          x1: 1,
+          xref: "paper",
+          y0: 0,
+          y1: 0,
+          line: {
+            width: 1,
+            dash: "dot"
+          }
+        },
+        {
+          type: "line",
+          x0: 0,
+          x1: 1,
+          xref: "paper",
+          y0: 10,
+          y1: 10,
+          line: {
+            width: 1.5,
+            dash: "dash"
+          }
+        }
+      ],
+
+      annotations: [
+        {
+          x: 1,
+          xref: "paper",
+          y: 10,
+          yref: "y",
+          text: "+10 bp stress threshold",
+          showarrow: false,
+          xanchor: "right",
+          yanchor: "bottom",
+          font: {
+                    size: 11,
+                    color: "#617080"
+                },
+
+                bgcolor: "rgba(255,255,255,0.9)",
+                borderpad: 3
+        }
+      ]
+    },
+
+    cfg
+  );
+}
+
 drawCredit(); drawTightening(); document.querySelectorAll('.range-buttons button').forEach(b => b.addEventListener('click', () => { b.parentElement.querySelectorAll('button').forEach(x => x.classList.remove('active')); b.classList.add('active'); drawCredit(b.dataset.range) }));
 const bucket2 = (D.debt.maturity_buckets || []).find(d => String(d.horizon).startsWith('2 ')); const bucket3 = (D.debt.maturity_buckets || []).find(d => String(d.horizon).startsWith('3 ')); if (bucket2) { document.getElementById('refi2yrDebt').textContent = fmtT(bucket2.amount); document.getElementById('refi2yrShare').textContent = `${bucket2.share.toFixed(1)}% of marketable debt`; document.getElementById('refiLead').innerHTML = `About <strong>${fmtT(bucket2.amount)}</strong>, or <strong>${bucket2.share.toFixed(1)}%</strong> of marketable Treasury debt, matures within two years.` } if (bucket3) { document.getElementById('refi3yrDebt').textContent = fmtT(bucket3.amount); document.getElementById('refi3yrShare').textContent = `${bucket3.share.toFixed(1)}% of marketable debt` } const wall = D.maturity_wall || []; let wallMode = 'amount'; function drawWall() { if (!wall.length) { document.getElementById('wallChart').innerHTML = "<div class='empty'>The maturity wall will populate after you run the exporter against treasury_maturity_wall.csv.</div>"; return } const ykey = Object.keys(wall[0]).find(k => k.toLowerCase().includes('maturity')); const keys = Object.keys(wall[0]).filter(k => k !== ykey); const cy = new Date().getFullYear(); const x = wall.filter(r => Number(r[ykey]) >= cy && Number(r[ykey]) <= cy + 20); const total = Number(D.debt.marketable_debt_trillions) || 1; Plotly.react('wallChart', keys.map(k => ({ x: x.map(r => String(r[ykey])), y: x.map(r => { const v = Number(r[k]) || 0; return wallMode === 'share' ? v / total * 100 : v }), name: k, type: 'bar', hovertemplate: wallMode === 'share' ? `${k}<br>%{x}: %{y:.1f}% of marketable debt<extra></extra>` : `${k}<br>%{x}: $%{y:.2f}T<extra></extra>` })), { ...layout, barmode: 'stack', xaxis: { ...layout.xaxis, type: 'category', title: 'Maturity year' }, yaxis: { ...layout.yaxis, title: wallMode === 'share' ? 'Share of marketable debt (%)' : '$ trillions' } }, cfg) } drawWall(); document.querySelectorAll('[data-wall-mode]').forEach(b => b.addEventListener('click', () => { document.querySelectorAll('[data-wall-mode]').forEach(x => x.classList.remove('active')); b.classList.add('active'); wallMode = b.dataset.wallMode; drawWall() }));
 Plotly.newPlot('compositionChart', [{ labels: D.debt.composition.map(d => d.security), values: D.debt.composition.map(d => d.amount), type: 'pie', hole: .55, textinfo: 'label+percent', hovertemplate: '%{label}: $%{value:.2f}T<extra></extra>' }], { ...layout, margin: { l: 45, r: 45, t: 20, b: 65 }, showlegend: false }, cfg);

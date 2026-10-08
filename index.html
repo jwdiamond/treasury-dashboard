@@ -45,11 +45,31 @@
         </div>
       </div>
       <div class="status-strip">
-        <div><span class="status-label">Current status</span><strong id="statusText"></strong></div><span
-          class="status-pill" id="statusPill"></span>
-        <p id="statusExplain"></p>
-      </div>
-      <div class="cards five">
+
+  <div>
+    <span class="status-label">Current status</span>
+    <strong id="statusText"></strong>
+  </div>
+
+  <span class="status-pill" id="statusPill"></span>
+
+  <div class="status-detail">
+    <p id="statusExplain"></p>
+
+    <div class="status-moves">
+      <span>
+        10Y Treasury
+        <strong id="statusTreasuryMove"></strong>
+      </span>
+
+      <span>
+        BBB spread
+        <strong id="statusBBBMove"></strong>
+      </span>
+    </div>
+  </div>
+
+</div><div class="cards five">
         <article class="metric-card clickable" data-scroll="creditPanel"><span>10-Year Treasury</span><strong
             id="ust10"></strong><small id="ust10chg"></small>
           <div class="context" id="ust10ctx"></div>
@@ -94,6 +114,27 @@
             </div><button class="download-btn" data-download="tightening">CSV</button>
           </div>
           <div id="tighteningChart" class="chart"></div>
+          <div class="tightening-key">
+
+  <div>
+    <span class="signal-dot normal-dot"></span>
+    <strong>Normal</strong>
+    <small>One or both measures are flat or falling</small>
+  </div>
+
+  <div>
+    <span class="signal-dot watch-dot"></span>
+    <strong>Watch</strong>
+    <small>Rates and spreads are both rising</small>
+  </div>
+
+  <div>
+    <span class="signal-dot stress-dot"></span>
+    <strong>Stress</strong>
+    <small>Both exceed the +10 bp threshold</small>
+  </div>
+
+</div>
           <p class="caption">Positive values on both lines mean Treasury yields and BBB credit spreads are rising
             together.</p>
         </article>
