@@ -105,6 +105,13 @@ const bucket2 = (D.debt.maturity_buckets || []).find(d => String(d.horizon).star
 Plotly.newPlot('compositionChart', [{ labels: D.debt.composition.map(d => d.security), values: D.debt.composition.map(d => d.amount), type: 'pie', hole: .55, textinfo: 'label+percent', hovertemplate: '%{label}: $%{value:.2f}T<extra></extra>' }], { ...layout, margin: { l: 45, r: 45, t: 20, b: 65 }, showlegend: false }, cfg);
 const R = D.refinancing;
 
+const refiRangeTotal = R
+  .filter(r => r.year >= 2026 && r.year <= 2036)
+  .reduce((sum, r) => sum + Number(r.maturing), 0);
+
+document.getElementById("refiRangeTotal").textContent =
+  fmtT(refiRangeTotal);
+
 let rateShiftBp = 0;
 let selectedYear = (R[1] || R[0]).year;
 let refiRange = "near";
