@@ -1,5 +1,5 @@
 const D = window.DASHBOARD_DATA;
-const fmtPct = v => `${Number(v).toFixed(2)}%`, fmtBp = v => `${Math.round(v)} bp`, signBp = v => `${v >= 0 ? '+' : ''}${Math.round(v)} bp`, fmtT = v => `$${Number(v).toFixed(2)}T`, fmtB = v => `$${v >= 0 ? '+' : ''}${Number(v).toFixed(1)}B`;
+const fmtPct = v => `${Number(v).toFixed(2)}%`, fmtBp = v => `${Math.round(v)} bp`, signBp = v => `${v >= 0 ? '+' : ''}${Math.round(v)} bp`, fmtT = v => `$${Number(v).toFixed(2)}T`, fmtB = v => `${v >= 0 ? '+' : '-'}$${Math.abs(Number(v)).toFixed(1)}B`;
 document.getElementById('marketFresh').textContent = `Market data: ${D.meta.market_date || 'n/a'}`; document.getElementById('mspdFresh').textContent = `Debt snapshot: ${D.meta.mspd_date || 'n/a'}`; document.getElementById('curveFresh').textContent = `Yield curve: ${D.meta.curve_date || 'n/a'}`;
 document.getElementById('ust10').textContent = fmtPct(D.market.ust10); document.getElementById('real10').textContent = fmtPct(D.market.real10); document.getElementById('ig').textContent = fmtBp(D.market.ig_oas); document.getElementById('bbb').textContent = fmtBp(D.market.bbb_oas); document.getElementById('hy').textContent = fmtBp(D.market.hy_oas); document.getElementById('ust10chg').textContent = `${signBp(D.market.ust10_5d_bp)} over 5 observations`; document.getElementById('bbbchg').textContent = `${signBp(D.market.bbb_5d_bp)} over 5 observations`;
 const H = (D.credit_history || []).filter(d => d.date);
@@ -105,13 +105,6 @@ const bucket2 = (D.debt.maturity_buckets || []).find(d => String(d.horizon).star
 Plotly.newPlot('compositionChart', [{ labels: D.debt.composition.map(d => d.security), values: D.debt.composition.map(d => d.amount), type: 'pie', hole: .55, textinfo: 'label+percent', hovertemplate: '%{label}: $%{value:.2f}T<extra></extra>' }], { ...layout, margin: { l: 45, r: 45, t: 20, b: 65 }, showlegend: false }, cfg);
 const R = D.refinancing;
 
-const refiRangeTotal = R
-  .filter(r => r.year >= 2026 && r.year <= 2036)
-  .reduce((sum, r) => sum + Number(r.maturing), 0);
-
-document.getElementById("refiRangeTotal").textContent =
-  fmtT(refiRangeTotal);
-
 let rateShiftBp = 0;
 let selectedYear = (R[1] || R[0]).year;
 let refiRange = "near";
@@ -185,6 +178,13 @@ function selectRefiYear(year) {
 
 function drawRefi() {
   const S = scenarioRows();
+
+  const interestTotal2036 = S
+  .filter(r => r.year >= 2026 && r.year <= 2036)
+  .reduce((sum, r) => sum + Number(r.interest_scenario), 0);
+
+  document.getElementById("refiInterestTotal").textContent =
+  fmtB(interestTotal2036);
 
   const rateRows = visibleRateRows(S);
 
