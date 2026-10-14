@@ -194,3 +194,13 @@ dialog h4{color:var(--navy);margin-bottom:6px;margin-top:20px}
   font-size: 0.82rem;
   color: var(--navy);
 }
+
+.site-footer {
+  max-width: 1200px;
+  margin: 48px auto 24px;
+  padding: 20px 0 0;
+  border-top: 1px solid #d9e0e7;
+  color: #6b7280;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}

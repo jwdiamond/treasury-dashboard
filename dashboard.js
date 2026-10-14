@@ -1,6 +1,16 @@
 const D = window.DASHBOARD_DATA;
 const fmtPct = v => `${Number(v).toFixed(2)}%`, fmtBp = v => `${Math.round(v)} bp`, signBp = v => `${v >= 0 ? '+' : ''}${Math.round(v)} bp`, fmtT = v => `$${Number(v).toFixed(2)}T`, fmtB = v => `${v >= 0 ? '+' : '-'}$${Math.abs(Number(v)).toFixed(1)}B`;
-document.getElementById('marketFresh').textContent = `Market data: ${D.meta.market_date || 'n/a'}`; document.getElementById('mspdFresh').textContent = `Debt snapshot: ${D.meta.mspd_date || 'n/a'}`; document.getElementById('curveFresh').textContent = `Yield curve: ${D.meta.curve_date || 'n/a'}`;
+document.getElementById('treasuryFresh').textContent =
+  `Treasury rates: ${D.meta.treasury_data_date || 'n/a'}`;
+
+document.getElementById('creditFresh').textContent =
+  `Credit spreads: ${D.meta.credit_data_date || 'n/a'}`;
+
+document.getElementById('mspdFresh').textContent =
+  `Debt snapshot: ${D.meta.mspd_date || 'n/a'}`;
+
+document.getElementById('curveFresh').textContent =
+  `Yield curve: ${D.meta.curve_date || 'n/a'}`;
 document.getElementById('ust10').textContent = fmtPct(D.market.ust10); document.getElementById('real10').textContent = fmtPct(D.market.real10); document.getElementById('ig').textContent = fmtBp(D.market.ig_oas); document.getElementById('bbb').textContent = fmtBp(D.market.bbb_oas); document.getElementById('hy').textContent = fmtBp(D.market.hy_oas); document.getElementById('ust10chg').textContent = `${signBp(D.market.ust10_5d_bp)} over 5 observations`; document.getElementById('bbbchg').textContent = `${signBp(D.market.bbb_5d_bp)} over 5 observations`;
 const H = (D.credit_history || []).filter(d => d.date);
 function rangeStats(key) { const vals = H.slice(-365).map(d => Number(d[key])).filter(Number.isFinite); if (!vals.length) return null; return { avg: vals.reduce((a, b) => a + b, 0) / vals.length, min: Math.min(...vals), max: Math.max(...vals) } }
