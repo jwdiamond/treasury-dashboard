@@ -47,7 +47,7 @@ data={
         'treasury_data_date':treasury_data_date,
         'credit_data_date':credit_data_date,
         'mspd_date':mspd,
-        'curve_date':curve_date,
+        'curve_date':treasury_data_date,
         'generated':pd.Timestamp.now().date().isoformat()
     },
 
