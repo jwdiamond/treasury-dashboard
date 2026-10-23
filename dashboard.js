@@ -16,7 +16,35 @@ const H = (D.credit_history || []).filter(d => d.date);
 function rangeStats(key) { const vals = H.slice(-365).map(d => Number(d[key])).filter(Number.isFinite); if (!vals.length) return null; return { avg: vals.reduce((a, b) => a + b, 0) / vals.length, min: Math.min(...vals), max: Math.max(...vals) } }
 function putCtx(id, key, suffix, dec = 0) { const s = rangeStats(key); if (!s) return; document.getElementById(id).textContent = `1Y avg ${s.avg.toFixed(dec)}${suffix} · range ${s.min.toFixed(dec)}–${s.max.toFixed(dec)}${suffix}` }
 putCtx('ust10ctx', 'ust10', '%', 2); putCtx('real10ctx', 'real10', '%', 2); putCtx('igctx', 'ig', ' bp'); putCtx('bbbctx', 'bbb', ' bp'); putCtx('hyctx', 'hy', ' bp');
-let status = 'Normal'; if (D.market.alert_1d || D.market.alert_5d) status = 'Stress'; else if (D.market.ust10_5d_bp > 0 && D.market.bbb_5d_bp > 0) status = 'Watch'; document.getElementById('statusText').textContent = D.market.regime; const pill = document.getElementById('statusPill'); pill.textContent = status; pill.className = `status-pill ${status.toLowerCase()}`; document.getElementById('statusExplain').textContent = status === 'Stress' ? "Treasury yields and BBB credit spreads have both risen enough to trigger the dashboard's tightening thresholds." : status === 'Watch' ? "Rates and credit spreads are moving in the same tightening direction, but not enough to trigger the stress thresholds." : 'Rates and credit spreads are not currently showing a significant simultaneous tightening signal.';
+let status = 'Stable';
+
+if (D.market.alert_1d || D.market.alert_5d) {
+  status = 'Stress';
+}
+else if (D.market.ust10_5d_bp > 0 && D.market.bbb_5d_bp > 0) {
+  status = 'Watch';
+}
+else if (
+  (D.market.ust10_5d_bp < 0 && D.market.bbb_5d_bp > 0) ||
+  (D.market.ust10_5d_bp > 0 && D.market.bbb_5d_bp < 0)
+) {
+  status = 'Mixed';
+}
+
+document.getElementById('statusText').textContent = D.market.regime;
+
+const pill = document.getElementById('statusPill');
+pill.textContent = status;
+pill.className = `status-pill ${status.toLowerCase()}`;
+
+document.getElementById('statusExplain').textContent =
+  status === 'Stress'
+    ? "Treasury yields and BBB credit spreads have both risen enough to trigger the dashboard's tightening thresholds."
+    : status === 'Watch'
+    ? "Rates and credit spreads are moving in the same tightening direction, but not enough to trigger the stress thresholds."
+    : status === 'Mixed'
+    ? "Treasury yields and credit spreads are moving in opposite directions, indicating mixed financial conditions rather than a simultaneous tightening signal."
+    : "Rates and credit spreads are relatively stable and are not currently showing a significant tightening signal.";
 document.getElementById("statusTreasuryMove").textContent =
   signBp(D.market.ust10_5d_bp);
 
